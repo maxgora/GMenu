@@ -71,7 +71,7 @@ void ScreenInit()
   gdispImageClose(&img);    
   LCD_LED_ON();
   
-  //osDelay(1500);
+  osDelay(1500);
   gdispClear(White);  // очистка экрана
   
   font1 = gdispOpenFont("UI2");
