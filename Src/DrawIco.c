@@ -1,5 +1,9 @@
 #include "DrawIco.h"
 
+extern gFont font1; // малый шрифт - UI2 (h=8pxls)
+
+extern GlobValType GV;
+
 /*void DrawIcoUp(uint16_t x, uint16_t y, gColor c )
 {
   const uint8_t size_x = 9;
@@ -106,4 +110,39 @@ void DrawHScaleFill(uint16_t x, uint16_t y, gColor c)
   gdispDrawCircle((34+x), (6+y), 6, c);   
   point p[4] = { {0,4}, {12,8}, {24,4}, {12,0} };  
   gdispFillConvexPoly((x), (y), p, 4, c);
+}
+/*
+Вывод легенды для 10ти отведений.
+Параметр:
+leads_mask - маска для отведений, требующих перерисовки
+*/
+void DrawLeads(gPoint ref_p, uint16_t leads_mask, uint8_t lead_iactive, gColor c, gColor bc)
+{
+  gFont font = font1;
+  gPoint txt = {ref_p.x,ref_p.y}; //{4,16};
+  Area marker = {{ref_p.x+17,ref_p.y+2},{8,8}};//{{21,18},{8,8}};
+  gCoord dy = 11;
+  uint16_t one_sh = 1;
+  int i;
+
+  for (i = 0; i < ECG_LEADs_CNT; i++)
+  { // перебор отведений
+    if (one_sh & leads_mask)
+    { // для i-го отведения тр-ся перерисовка легенды
+      if (i == lead_iactive)
+        gdispFillString(txt.x, txt.y, GV.ecg_lead[i].lead_name, font, bc, c);
+      else
+        gdispFillString(txt.x, txt.y, GV.ecg_lead[i].lead_name, font, c, bc);
+      
+      if (GV.ecg_lead[i].ecg_quality == ECG_NORMAL)
+        gdispFillArea(marker.p.x, marker.p.y, marker.size.x, marker.size.y, Green);
+      else
+        gdispFillArea(marker.p.x, marker.p.y, marker.size.x, marker.size.y, Red);
+    }
+    // инк коорд у
+    txt.y += dy;
+    marker.p.y += dy;
+    // маска для след отведения
+    one_sh = one_sh << 1;
+  }
 }

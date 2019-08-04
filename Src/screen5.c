@@ -1,3 +1,7 @@
+/*
+Экран просмотра ЭКГ
+*/
+
 #include <stdlib.h>
 #include <string.h>
 #include "screen5.h"
@@ -43,12 +47,14 @@ static const gPoint ico_hscale = {116,26};
 static const gPoint ico_vscale = {128,98};
 static const gPoint ico_down = {144,67};
 
+static const gPoint leads_ref_point = {4,16};
+
 /*
 Вывод легенды для 10ти отведений.
 Параметр:
 leads_mask - маска для отведений, требующих перерисовки
 */
-static void  DrawLeads(uint16_t leads_mask)
+/*static void  DrawLeads(uint16_t leads_mask)
 {
   gFont font = font1;
   gPoint txt = {4,16};
@@ -77,8 +83,7 @@ static void  DrawLeads(uint16_t leads_mask)
     // маска для след отведения
     one_sh = one_sh << 1;
   }
-}
-
+}*/
 /*
 Определение начального масштаба оси X.
 Параметры:
@@ -324,7 +329,8 @@ static void CbLeadsUpdate (uint16_t leads_mask)
   if (!screen_active) return;
   
   // прорисовка легенды для всех отведений
-  DrawLeads(leads_mask);
+  //DrawLeads(leads_mask);
+  DrawLeads(leads_ref_point, leads_mask, lead_iactive, color, bg_color);
   // обработка данных с заданным масштабом
   GetScaledPlotPoins(&GV.ecg_lead[lead_iactive].ecg);
   // рисование графика
@@ -341,7 +347,8 @@ y_scale_cur, y_scale_start
 ScreenReturnType Screen5Pool(ButtonPushType btn)
 {
   ScreenReturnType ret = SCREENx_RET_OK;
-  uint8_t lead_iactive_old; 
+  uint8_t lead_iactive_old;
+  uint16_t leads_mask;
   
   switch (btn)
   {
@@ -353,7 +360,9 @@ ScreenReturnType Screen5Pool(ButtonPushType btn)
       else
         lead_iactive = 0;
       // перерисовка легенды отведений 
-      DrawLeads((0x0001<<lead_iactive)|(0x0001<<lead_iactive_old));
+      //DrawLeads((0x0001<<lead_iactive)|(0x0001<<lead_iactive_old));
+      leads_mask = (0x0001<<lead_iactive)|(0x0001<<lead_iactive_old);
+      DrawLeads(leads_ref_point, leads_mask, lead_iactive, color, bg_color);
       // Обработка данных для вывода нового графика с масштабом по умолчанию
       GetDefaultPlotPoins(&GV.ecg_lead[lead_iactive].ecg);
       // рисование графика
@@ -402,6 +411,8 @@ ScreenReturnType Screen5Pool(ButtonPushType btn)
 // Инициализация экрана
 void Screen5Init(gColor bc, gColor c)
 {
+  uint16_t leads_mask;
+  
   screen_active = 1;
   GV.CbEcgUpdateHandler = CbLeadsUpdate;
   
@@ -415,7 +426,8 @@ void Screen5Init(gColor bc, gColor c)
   DrawVScaleFill(ico_vscale.x, ico_vscale.y, Black);
   DrawIcoDown(ico_down.x, ico_down.y, Black);
   // прорисовка легенды для всех отведений
-  DrawLeads(0xFFFF);
+  leads_mask = 0xFFFF;
+  DrawLeads(leads_ref_point, leads_mask, lead_iactive, color, bg_color);
   // Обработка данных для вывода графика
   GetDefaultPlotPoins(&GV.ecg_lead[lead_iactive].ecg);
   // рисование графика

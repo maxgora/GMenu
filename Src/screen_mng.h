@@ -5,6 +5,13 @@
 #include "gfx.h"
 #include "my_main.h"
 
+void BluetoothSwitch( void* pval );
+
+#define FONT_CH_H       ( gdispGetFontMetric(font, gFontHeight) )
+#define FONT_CH_D       ( gdispGetFontMetric(font, gFontDescendersHeight) )
+#define FONT_CH_HD      ( FONT_CH_H + FONT_CH_D )
+#define FONT_CH_MAXW    ( gdispGetFontMetric(font, gFontMaxWidth) )
+
 typedef struct Area_t
 {
   gPoint p;
@@ -36,6 +43,7 @@ void ScreenPool(ButtonPushType btn);
 
 typedef void( *pScreenInitType ) (gColor bc, gColor c);
 typedef ScreenReturnType ( *pScreenPoolType ) ( ButtonPushType btn );
+typedef void ( *pMenuCbFuncType ) ( void* pval );
 
 typedef struct
 {
@@ -48,6 +56,9 @@ typedef struct MenuType_t
 {
   char* name;
   Area area;
+  pMenuCbFuncType cbfunc; 
+  uint32_t cbfun_param;
+  ScreenReturnType ret;
 } MenuType;
 
 #endif

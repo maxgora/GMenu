@@ -1,3 +1,7 @@
+/*
+Экран стартового меню
+*/
+
 #include "screen0.h"
 #include "DrawIco.h"
 #include "header.h"
@@ -134,8 +138,7 @@ ScreenReturnType Screen0Pool(ButtonPushType btn)
         case 0: ret = SCREENx_RET_TO_SCREEN1; break;
         case 1: ret = SCREENx_RET_TO_SCREEN5; break;
         case 2:
-          GV.bluetooth_state = !GV.bluetooth_state;
-          HeaderBtUpdate(GV.bluetooth_state);
+          BluetoothSwitch(NULL);
           ret = SCREENx_RET_OK; 
           break;
         case 3: ret = SCREENx_RET_OK; break;

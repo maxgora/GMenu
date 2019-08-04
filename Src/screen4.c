@@ -1,5 +1,10 @@
+/*
+Экран вопроса обостановке записи
+*/
+
 #include "screen4.h"
 #include "DrawIco.h"
+#include "measure.h"
 
 extern font_t font1; // малый шрифт - UI2 (h=8pxls)
 extern font_t font2; // средний шрифт - times12bw (с кириллицей, h=12pxls)
@@ -10,8 +15,8 @@ static const Area screen_area = {{0,16},{160,112}}; // активная обла
 static gColor bg_color = White;       // цвет фона
 static gColor color = Black;          // 
 
-static const uint8_t menu_size = 7;     // максимальный размер меню
-static const uint8_t menu_view_max = 4; // максимальное кол-во элементов меню, выводимое на экран
+static const uint8_t menu_size = 2;     // максимальный размер меню
+static const uint8_t menu_view_max = 2; // максимальное кол-во элементов меню, выводимое на экран
 static uint8_t menu_itop = 0;           // индекс меню, отображаемого сверху
 static uint8_t menu_iactive = 0;        // индекс активного меню
 
@@ -19,20 +24,29 @@ static const gPoint ico_up = {146,26};
 static const gPoint ico_enter = {140,66};
 static const gPoint ico_down = {146,106};
 
-static char *pmenu[menu_size] = {"Старт",
-                        "ЭКГ",
-                        "Bluetooth",
-                        "Выключить",
-                        "Настройка обсл.",
-                        "Уст. даты/время",
-                        "Обновить ПО"}; 
+static const MenuType menu[menu_size] = { 
+  { "НЕТ",    {{22,64},{94,17}},  NULL,NULL,        SCREENx_RETURN }, 
+  { "ДА",     {{0,0},{94,17}},    MeasureStop,NULL, SCREENx_RET_TO_SCREEN0 }  
+};
 
-static void MenuUpdate( void )
+/*
+Вывод меню на экран
+Параметр:
+mask - маска для элементов, требующих перерисовки
+*/
+static void MenuUpdate( uint16_t mask )
 {
-  Area a = {{32,27},{94,17}}; // площадь для вывода первого элемента меню
+  gFont font = font2;
+  Area a;                     // область для вывода первого элемента меню
   uint8_t dy = 25;            // приращение y-координаты
-  //gJustify j = gJustifyCenter;
-  uint8_t j;                  // сдвиг области текста активного элемента меню
+  gColor icolor;
+  uint16_t one_sh = 1;
+  
+  a.p.x = menu[0].area.p.x;
+  a.p.y = menu[0].area.p.y;
+  a.size.x = menu[0].area.size.x;
+  a.size.y = menu[0].area.size.y;
+
   
   // проверка и корректировка списка меню
   if (menu_iactive > menu_size-1)
@@ -44,29 +58,21 @@ static void MenuUpdate( void )
   
   for(int i = menu_itop; i < (menu_itop + menu_view_max); i++)
   {
-    if (i == menu_iactive)
-      j = 2;
-    else
-      j = 1;
-    
-    if ((i == 4) | (i == 5))
-    { 
-      gdispDrawBox(a.p.x-5, a.p.y, a.size.x+10, a.size.y, color);         // широкая рамка
+    if (one_sh & mask)
+    { // для i-го элемента меню тр-ся перерисовка
+      if (i == menu_iactive)
+        icolor = Blue;
+      else
+        icolor = color;
+        
+      gdispFillStringBox(a.p.x, a.p.y, a.size.x, a.size.y, 
+                          menu[i].name, font, icolor, bg_color, gJustifyCenter | gJustifyTop);  // текст
       
-      gdispFillStringBox(a.p.x+j-5, a.p.y+j, a.size.x-2+10, a.size.y-2, 
-                          pmenu[i], font2, color, bg_color, gJustifyCenter);
-    }
-    else
-    { 
-      gdispDrawBox(a.p.x-5, a.p.y, a.size.x+10, a.size.y, bg_color);      // стереть широкую рамка
-      
-      gdispDrawBox(a.p.x, a.p.y, a.size.x, a.size.y, color);              // стандартная рамка
-      
-      gdispFillStringBox(a.p.x+j, a.p.y+j, a.size.x-2, a.size.y-2, 
-                          pmenu[i], font2, color, bg_color, gJustifyCenter); // текст
-    }
-    
+      gdispDrawBox(a.p.x, a.p.y, a.size.x, a.size.y, icolor);                               // рамка
+    }   
     a.p.y += dy;
+    // маска для след элемента меню
+    one_sh = one_sh << 1;
   }
 }
                         
@@ -75,35 +81,35 @@ static void MenuUpdate( void )
 ScreenReturnType Screen4Pool(ButtonPushType btn)
 {
   ScreenReturnType ret = SCREENx_RET_OK;
+  uint8_t menu_iactive_old;
+  uint32_t val;
   switch (btn)
   {
     case BTN_DOWN:
       if (menu_iactive < (menu_size-1))
       {
+        menu_iactive_old = menu_iactive;
         menu_iactive++;
-        MenuUpdate();
+        MenuUpdate((0x0001<<menu_iactive)|(0x0001<<menu_iactive_old));
       }
       break;
     
     case BTN_UP:
       if (menu_iactive > 0)
       {
+        menu_iactive_old = menu_iactive;
         menu_iactive--;
-        MenuUpdate();
+        MenuUpdate((0x0001<<menu_iactive)|(0x0001<<menu_iactive_old));
       }
       break;
     
     case BTN_SET:
-      switch (menu_iactive)
+      if (menu[menu_iactive].cbfunc != NULL)
       {
-        case 0: ret = SCREENx_RET_TO_SCREEN3; break;
-        case 1: ret = SCREENx_RET_TO_SCREEN7; break;
-        case 2: ret = SCREENx_RET_OK; break;
-        case 3: ret = SCREENx_RET_OK; break;
-        case 4: ret = SCREENx_RET_TO_SCREEN8; break;
-        case 5: ret = SCREENx_RET_OK; break;
-        case 6: ret = SCREENx_RET_OK; break;
+        val = menu[menu_iactive].cbfun_param;
+        menu[menu_iactive].cbfunc(&val);
       }
+      ret = menu[menu_iactive].ret;
       break;
     
     default:  // PUSH_USER
@@ -126,6 +132,10 @@ void Screen4Init(gColor bc, gColor c)
   DrawIcoDown(ico_down.x, ico_down.y, Black);
   DrawEnter(ico_enter.x, ico_enter.y, Black);
   
-  MenuUpdate(); 
+  gdispDrawStringBox(0, 30, 138, 25,
+    "Остановить запись?", font2, color, gJustifyCenter);
+  
+  // прорисовка всех элементов меню
+  MenuUpdate(0xFFFF);
 }
 

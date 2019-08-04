@@ -450,6 +450,11 @@
               <FileType>1</FileType>
               <FilePath>..\Src\utils_tst.c</FilePath>
             </File>
+            <File>
+              <FileName>measure.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\measure.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

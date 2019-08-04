@@ -1,109 +1,103 @@
+/*
+Экран вкл/выкл пейсмейкера
+*/
+
 #include "screen11.h"
 #include "DrawIco.h"
+#include "measure.h"
 
-extern font_t font1; // малый шрифт - UI2 (h=8pxls)
-extern font_t font2; // средний шрифт - times12bw (с кириллицей, h=12pxls)
-extern font_t font3; // крупный шрифт - fixed_10x20 (для времени)
+extern GlobValType GV;
 
 static const Area screen_area = {{0,16},{160,112}}; // активная область экрана {start point, size}
 
 static gColor bg_color = White;       // цвет фона
 static gColor color = Black;          // 
 
-static const uint8_t menu_size = 7;     // максимальный размер меню
-static const uint8_t menu_view_max = 4; // максимальное кол-во элементов меню, выводимое на экран
-static uint8_t menu_itop = 0;           // индекс меню, отображаемого сверху
+static const uint8_t menu_size = 2;     // максимальный размер меню
 static uint8_t menu_iactive = 0;        // индекс активного меню
 
 static const gPoint ico_up = {146,26};
 static const gPoint ico_enter = {140,66};
 static const gPoint ico_down = {146,106};
 
-static char *pmenu[menu_size] = {"Старт",
-                        "ЭКГ",
-                        "Bluetooth",
-                        "Выключить",
-                        "Настройка обсл.",
-                        "Уст. даты/время",
-                        "Обновить ПО"}; 
+static void PMControl( void* pval );
 
-static void MenuUpdate( void )
+static const MenuType menu[menu_size] = { 
+  { "Вкл",    {{25,57},{0,0}},    PMControl, SIG_ON,  SCREENx_RETURN }, 
+  { "Выкл",   {{25,83},{94,17}},  PMControl, SIG_OFF, SCREENx_RETURN }  
+};
+
+static void PMControl( void* pval )
 {
-  Area a = {{32,27},{94,17}}; // площадь для вывода первого элемента меню
-  uint8_t dy = 25;            // приращение y-координаты
-  //gJustify j = gJustifyCenter;
-  uint8_t j;                  // сдвиг области текста активного элемента меню
+  GV.pacemaker_state = *((SignalStateType*)pval);
+}
+
+/*
+Вывод меню на экран
+Параметр:
+mask - маска для элементов, требующих перерисовки
+*/
+static void MenuUpdate( uint16_t mask )
+{
+  gColor icolor;
+  uint16_t one_sh = 1;
   
-  // проверка и корректировка списка меню
-  if (menu_iactive > menu_size-1)
-    menu_iactive = menu_size-1;
-  if (menu_iactive < menu_itop)
-    menu_itop = menu_iactive;
-  else if ((menu_itop + menu_view_max - 1) < menu_iactive)
-    menu_itop = menu_iactive - (menu_view_max-1);
-  
-  for(int i = menu_itop; i < (menu_itop + menu_view_max); i++)
+  for(int i = 0; i < menu_size; i++)
   {
-    if (i == menu_iactive)
-      j = 2;
-    else
-      j = 1;
-    
-    if ((i == 4) | (i == 5))
-    { 
-      gdispDrawBox(a.p.x-5, a.p.y, a.size.x+10, a.size.y, color);         // широкая рамка
-      
-      gdispFillStringBox(a.p.x+j-5, a.p.y+j, a.size.x-2+10, a.size.y-2, 
-                          pmenu[i], font2, color, bg_color, gJustifyCenter);
-    }
-    else
-    { 
-      gdispDrawBox(a.p.x-5, a.p.y, a.size.x+10, a.size.y, bg_color);      // стереть широкую рамка
-      
-      gdispDrawBox(a.p.x, a.p.y, a.size.x, a.size.y, color);              // стандартная рамка
-      
-      gdispFillStringBox(a.p.x+j, a.p.y+j, a.size.x-2, a.size.y-2, 
-                          pmenu[i], font2, color, bg_color, gJustifyCenter); // текст
-    }
-    
-    a.p.y += dy;
+    if (one_sh & mask)
+    { // для i-го элемента меню тр-ся перерисовка
+      if (i == menu_iactive)
+        icolor = color;
+      else
+        icolor = bg_color;
+        
+      gdispFillCircle(menu[i].area.p.x - 10, menu[i].area.p.y + 8, 5, icolor);
+    }   
+    // маска для след элемента меню
+    one_sh = one_sh << 1;
   }
 }
-                        
+
+static void DeInitScreen()
+{
+  ;  
+}                        
                         
 // обработка событий экрана
 ScreenReturnType Screen11Pool(ButtonPushType btn)
 {
   ScreenReturnType ret = SCREENx_RET_OK;
+  uint8_t menu_iactive_old;
+  uint32_t val;
+  
   switch (btn)
   {
     case BTN_DOWN:
+      menu_iactive_old = menu_iactive;
       if (menu_iactive < (menu_size-1))
-      {
         menu_iactive++;
-        MenuUpdate();
-      }
+      else
+        menu_iactive = 0;
+      MenuUpdate((0x0001<<menu_iactive)|(0x0001<<menu_iactive_old));
       break;
     
     case BTN_UP:
+      menu_iactive_old = menu_iactive;
       if (menu_iactive > 0)
-      {
         menu_iactive--;
-        MenuUpdate();
-      }
+      else
+        menu_iactive = menu_size-1;
+      MenuUpdate((0x0001<<menu_iactive)|(0x0001<<menu_iactive_old));
       break;
     
     case BTN_SET:
-      switch (menu_iactive)
+      if (menu[menu_iactive].cbfunc != NULL)
       {
-        case 0: ret = SCREENx_RET_TO_SCREEN3; break;
-        case 1: ret = SCREENx_RET_TO_SCREEN7; break;
-        case 2: ret = SCREENx_RET_OK; break;
-        case 3: ret = SCREENx_RET_OK; break;
-        case 4: ret = SCREENx_RET_TO_SCREEN8; break;
-        case 5: ret = SCREENx_RET_OK; break;
-        case 6: ret = SCREENx_RET_OK; break;
+        val = menu[menu_iactive].cbfun_param;
+        menu[menu_iactive].cbfunc(&val);
       }
+      ret = menu[menu_iactive].ret;
+      DeInitScreen();
       break;
     
     default:  // PUSH_USER
@@ -126,6 +120,22 @@ void Screen11Init(gColor bc, gColor c)
   DrawIcoDown(ico_down.x, ico_down.y, Black);
   DrawEnter(ico_enter.x, ico_enter.y, Black);
   
-  MenuUpdate(); 
+  font_t font = gdispOpenFont("times18bw");
+  
+  gdispDrawStringBox(0, 28, 138, 25,
+  "Пейсмейкер", font, color, gJustifyCenter);
+  
+  for (int i = 0; i < menu_size; i++)
+    gdispDrawString(menu[i].area.p.x, menu[i].area.p.y, menu[i].name, font, c);
+  
+  gdispCloseFont(font);
+  
+  if (GV.pacemaker_state == SIG_ON)
+    menu_iactive = 0;
+  else
+    menu_iactive = 1;
+  
+  // прорисовка всех элементов меню
+  MenuUpdate(0xFFFF);
 }
 

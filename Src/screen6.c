@@ -1,3 +1,7 @@
+/*
+Экран изменения настроек обследования
+*/
+
 #include "screen6.h"
 #include "DrawIco.h"
 #include "header.h"

@@ -11,13 +11,25 @@
 
 #define ECG_LEADs_CNT   10
 
+#define FULL_NAME_MAX_CHAR   60
+
+typedef struct TimeSpan_t
+{
+  int8_t s;
+  int8_t m;
+  int8_t h;
+  int8_t d;
+} TimeSpan;
+
 typedef enum {
-  BTN_UNDEF,
+  BTN_UNDEF = 0,
   BTN_DOWN,
+  BTN_DOWN_LONG,
   BTN_PUSH_DOWN,
   BTN_SET,
   BTN_SET_LONG,
   BTN_UP,
+  BTN_UP_LONG,
   BTN_PUSH_UP,
   BTN_USER
 } ButtonPushType;
@@ -84,8 +96,8 @@ typedef struct GlobValType_t
   pxFunctionHandler CbEcgUpdateHandler; // Cb Func after ecg_lead[] update
   
   SignalStateType measure_state;  
-  uint32_t    measure_time_set;   // 
-  uint32_t    measure_time_cur;
+  uint32_t    measure_time_set;      // макс время измерения в мин
+  uint32_t    measure_time_cur_sec;  // время активого измерения в сек
   EcgModeType ecg_mode;
   SignalStateType pacemaker_state;
   Fsmpl_Type smpl_rate;

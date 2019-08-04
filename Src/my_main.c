@@ -2,7 +2,7 @@
 #include "utils_tst.h"
 #include "utils.h"
 #include "screen_mng.h"
-//#include "ecg.h"
+#include "hooks.h"
 
 // элемент для уведомления о нажатии кнопки
 QueueHandle_t xQueueButtons;
@@ -39,24 +39,8 @@ void taskDisplayPool(void * argument)
   
   while(1)
   {
-    xQueueReceive( xQueueButtons, &button_event, portMAX_DELAY);
-    
-    ScreenPool(button_event);
-    
-    /*switch ( button_event )
-    {
-      case PUSH_UP:
-        break;      
-      case PUSH_SET:
-        break;
-      case PUSH_DOWN:
-        break;
-      case PUSH_USER:
-        break;
-      
-      default:
-        break;
-    }*/   
+    xQueueReceive( xQueueButtons, &button_event, portMAX_DELAY);    
+    ScreenPool(button_event);  
   }
 }
 
@@ -82,45 +66,41 @@ void taskBtnsPool(void * argument)
 // функции, вызываемые при нажатии кнопок
 void CbPushButtonUp(TM_BUTTON_t* bs, TM_BUTTON_PressType_t pt)
 {
-  ButtonPushType btn; 
+  ButtonPushType btn = 0; 
   if (pt == TM_BUTTON_PressType_Normal)
-  {   
     btn = (uint8_t)BTN_UP;
-    xQueueSend( xQueueButtons,  &btn, 0);
-  }
   else if (pt == TM_BUTTON_PressType_OnPressed)
-  {
     btn = BTN_PUSH_UP;
+  else if (pt == TM_BUTTON_PressType_Long)
+    btn = BTN_UP_LONG;
+
+  if (btn)
     xQueueSend( xQueueButtons,  &btn, 0);
-  }
+
 }
 void CbPushButtonSet(TM_BUTTON_t* bs, TM_BUTTON_PressType_t pt)
 {
-  ButtonPushType btn; 
+  ButtonPushType btn = 0; 
   if (pt == TM_BUTTON_PressType_Normal)
-  {    
     btn = BTN_SET;
-    xQueueSend( xQueueButtons,  &btn, 0);
-  }
   else if (pt == TM_BUTTON_PressType_Long)
-  {    
     btn = BTN_SET_LONG;
+
+  if (btn)
     xQueueSend( xQueueButtons,  &btn, 0);
-  }
 }
 void CbPushButtonDown(TM_BUTTON_t* bs, TM_BUTTON_PressType_t pt)
 {
-  ButtonPushType btn; 
+  ButtonPushType btn = 0; 
   if (pt == TM_BUTTON_PressType_Normal)
-  { 
     btn = BTN_DOWN;
-    xQueueSend( xQueueButtons,  &btn, 0);
-  }
   else if (pt == TM_BUTTON_PressType_OnPressed)
-  {
     btn = BTN_PUSH_DOWN;
+  else if (pt == TM_BUTTON_PressType_Long)
+    btn = BTN_DOWN_LONG;
+  
+  if (btn)
     xQueueSend( xQueueButtons,  &btn, 0);
-  }
 }
 void CbPushButtonUser(TM_BUTTON_t* bs, TM_BUTTON_PressType_t pt)
 {
@@ -146,7 +126,7 @@ void MyInit(void)
 
   // очередь нажатий кнопок 
   xQueueButtons = xQueueCreate( 1, sizeof( ButtonPushType ) );
-  while(xQueueButtons == NULL) ;  
+  MY_CHECK( xQueueButtons ) ;
   
   // кнопки
   

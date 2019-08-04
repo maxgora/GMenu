@@ -1,3 +1,7 @@
+/*
+Экран просмотра настроек обследования перед записью
+*/
+
 #include <string.h>
 #include "screen1.h"
 #include "DrawIco.h"
@@ -29,18 +33,18 @@ static const Area marker = {{7,0},{4,0}};
 // значение координаты, равное 0 означает, что значение вычисляется
 
 static const MenuType menu0[] = { 
-  { "ФИО: ", {{0,33},{0,0}} },  
-  { "Режим: ", {{0,0},{0,0}} }
+  { "ФИО: ",            {{0,33},{0,0}},     NULL,NULL, SCREENx_RET_OK },  
+  { "Режим: ",          {{0,0},{0,0}},      NULL,NULL, SCREENx_RET_OK }
 };
 static const MenuType menu1[] = { 
-  { "Длительность: ", {{0,27},{0,0}} },  
-  { "Частота дискр.: ", {{0,0},{0,0}} }, 
-  { "Пейсмейкер: ", {{0,0},{0,0}} }
+  { "Длительность: ",   {{0,27},{0,0}},     NULL,NULL, SCREENx_RET_OK },  
+  { "Частота дискр.: ", {{0,0},{0,0}},      NULL,NULL, SCREENx_RET_OK }, 
+  { "Пейсмейкер: ",     {{0,0},{0,0}},      NULL,NULL, SCREENx_RET_OK }
 };  
 static const MenuType menu2[] = { 
-  { "Назад", {{27,30},{104,0}} }, 
-  { "Изменить", {{27,60},{104,0}} },  
-  { "Начать", {{27,90},{104,0}} } 
+  { "Назад",            {{27,30},{104,0}},  NULL,NULL, SCREENx_RET_TO_SCREEN0 }, 
+  { "Изменить",         {{27,60},{104,0}},  NULL,NULL, SCREENx_RET_TO_SCREEN6 },  
+  { "Начать",           {{27,90},{104,0}},  NULL,NULL, SCREENx_RET_TO_SCREEN2 } 
 };
 
 static void Menu0Update( void )
@@ -107,9 +111,9 @@ static void Menu1Update( void )
   gFont font = font2;
   Area a;               // для вычисления области вывода
   char number[11];      // буфер для перевода числа в строку
-  char dst[64];         // буфер для формирования выходной строки
+  char dst[64] = {0};   // буфер для формирования выходной строки
   char* str;
-  uint16_t h,m;         // временные переменные
+  uint16_t d,h,m;       // временные переменные
   gCoord sw;            // для подсчета длины строки
   gCoord sh = gdispGetFontMetric(font, gFontHeight); // string hegth
   
@@ -119,15 +123,23 @@ static void Menu1Update( void )
   gdispDrawString(a.p.x, a.p.y, menu1[0].name, font, color);
   sw = gdispGetStringWidth(menu1[0].name, font);
   // часы и минуты измерения
-  h = GV.measure_time_set / 60;
-  m = GV.measure_time_set - h*60;
+  d = GV.measure_time_set / (60*24);
+  h = (GV.measure_time_set - d * 60*24)/ 60;
+  m = GV.measure_time_set - d * 60*24 - h*60;
   // формирования выходной строки
+  if (d > 0)
+  {
+    str = utoa_fast_div((uint32_t)d, number); 
+    //str = strcpy(dst, str);                   // "XX"
+    str = strcat(dst, str);                     // "XX"
+    str = strcat(dst, "сут. ");                 // "XXсут. "
+  }
   str = utoa_fast_div((uint32_t)h, number); 
-  str = strcpy(dst, str);                     // " XXX"
-  str = strcat(dst, "ч. ");                   // " XXXч. "
+  str = strcat(dst, str);                     // "XXсут. XX"
+  str = strcat(dst, "ч. ");                   // "XXсут. XXч. "
   str = utoa_fast_div((uint32_t)m, number);
-  str = strcat(dst, str);                     // "XXXч. ХХ"
-  str = strcat(dst, "м.");                    // "XXXч. ХХм."
+  str = strcat(dst, str);                     // "XXсут. XXч. ХХ"
+  str = strcat(dst, "м.");                    // "XXсут. XXч. ХХм."
   // вычисление допустимой области для вывода "XXXч. ХХм."
   a.p.x += sw;  // +length("Длительность: ")
   // a.p.y - без изменения
@@ -310,14 +322,7 @@ ScreenReturnType Screen1Pool(ButtonPushType btn)
     
     case BTN_SET:
       if (menu_set == 2)
-        { // активный элемент меню на экране
-        switch (menu_iactive)
-        {
-          case 0: ret = SCREENx_RET_TO_SCREEN0; break;
-          case 1: ret = SCREENx_RET_TO_SCREEN6; break;
-          case 2: ret = SCREENx_RET_TO_SCREEN2; break;
-        }
-      }
+        ret = menu2[menu_iactive].ret;
       break;
     
     default:  // PUSH_USER
@@ -330,45 +335,17 @@ ScreenReturnType Screen1Pool(ButtonPushType btn)
 // Инициализация экрана
 void Screen1Init(gColor bc, gColor c)
 {
-  //Area a = {{32,27},{50,50}};
   bg_color = bc;
   color = c;
   
   gdispFillArea(screen_area.p.x, screen_area.p.y, 
                 screen_area.size.x, screen_area.size.y, bg_color);
   
-  /* Тест переноса
-  gdispFillStringBox(a.p.x, a.p.y,
-                      a.size.x,a.size.y,
-                      "Иванов Иван Иванович",
-                      font2,
-                      Black,
-                      SkyBlue,
-                      gJustifyTop);*/
-  //Тест шрифта
-  /*
-  gFont font = font2;
-  gdispDrawString(5, 20, "ЙёуЧрNqI|8/8,;'({[", font, Black);
-  gdispDrawString(5, 36, "ЙёуЧрNqI|8/8,;'({[", font, Black);
-  gdispDrawString(5, 52, "ЙёуЧрNqI|8/8,;'({[", font, Black);
-  gdispDrawString(5, 68, "ЙёуЧрNqI8/8,;'({[", font, Black);
-  gdispDrawString(5, 84, "ЙёуЧрNqI|8/8,;'({[", font, Black);
-  
-  gdispDrawLine(5, 20, 150, 20, Blue);
-  gdispDrawLine(5, 37, 150, 37, Blue);
-  gdispDrawLine(5, 54, 150, 54, Blue);
-  gdispDrawLine(5, 71, 150, 71, Blue);
-  gdispDrawLine(5, 88, 150, 88, Blue);
-  
-  gdispDrawLine(5, 31, 150, 31, Red);
-  gdispDrawLine(5, 48, 150, 48, Red);
-  gdispDrawLine(5, 65, 150, 65, Red);
-  gdispDrawLine(5, 82, 150, 82, Red);
-  gdispDrawLine(5, 99, 150, 99, Red);*/
-  
   DrawIcoUp(ico_up.x, ico_up.y, Black);
   DrawIcoDown(ico_down.x, ico_down.y, Black);
   DrawEnter(ico_enter.x, ico_enter.y, Black);
+  
+  menu_set = 0;
     
   MenuUpdate(); 
 }
