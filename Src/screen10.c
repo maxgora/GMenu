@@ -25,8 +25,8 @@ static void SetRate( void* pval );
 static const MenuType menu[menu_size] = { 
   { "250 Гц",    {{25,50},{0,0}},   SetRate,  (uint32_t)F_SMPL_250Hz, SCREENx_RETURN }, 
   { "500 Гц",    {{25,70},{0,0}},   SetRate,  (uint32_t)F_SMPL_500Hz, SCREENx_RETURN }, 
-  { "1000 Гц",   {{25,90},{0,0}},   SetRate,  (uint32_t)F_SMPL_500Hz, SCREENx_RETURN }, 
-  { "2000 Гц",   {{25,110},{0,0}},  SetRate,  (uint32_t)F_SMPL_500Hz, SCREENx_RETURN }  
+  { "1000 Гц",   {{25,90},{0,0}},   SetRate,  (uint32_t)F_SMPL_1000Hz,SCREENx_RETURN }, 
+  { "2000 Гц",   {{25,110},{0,0}},  SetRate,  (uint32_t)F_SMPL_2000Hz,SCREENx_RETURN }  
 };
 
 static void SetRate( void* pval )
